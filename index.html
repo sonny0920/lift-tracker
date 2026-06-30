@@ -274,6 +274,64 @@
   .backup textarea:focus{border-color:var(--molten);}
   .backup .brow{display:flex;gap:8px;margin-top:9px;}
 
+  /* ---- week selector (26-week plan) ---- */
+  .weekbar{display:flex;align-items:stretch;gap:8px;margin-bottom:10px;}
+  .weekbar .wnav{
+    flex:none;width:46px;background:var(--panel);border:1px solid var(--knurl);border-radius:11px;
+    color:var(--bone);font-size:15px;cursor:pointer;transition:.12s;
+  }
+  .weekbar .wnav:active{transform:translateY(1px);}
+  .weekbar .wnav:disabled{opacity:.28;cursor:default;}
+  .weekbar .wsel{
+    flex:1;background:var(--panel);border:1px solid var(--knurl);border-radius:11px;cursor:pointer;
+    padding:9px 13px;text-align:left;color:var(--bone);transition:.12s;
+  }
+  .weekbar .wsel:active{transform:translateY(1px);}
+  .weekbar .wsel .wk{
+    font-family:'Oswald',sans-serif;font-weight:700;font-size:17px;letter-spacing:.04em;text-transform:uppercase;
+  }
+  .weekbar .wsel .wk b{color:var(--molten);}
+  .weekbar .wsel .wk span{color:var(--dim);font-weight:500;}
+  .weekbar .wsel .ph{font-size:10.5px;letter-spacing:.07em;color:var(--steel);text-transform:uppercase;margin-top:2px;}
+  .weekbar .wsel .ph .dl{color:#d8a23b;font-weight:600;}
+
+  .weekgrid{
+    display:none;grid-template-columns:repeat(6,1fr);gap:6px;
+    background:var(--card);border:1px solid var(--knurl);border-radius:11px;padding:10px;margin-bottom:14px;
+  }
+  .weekgrid.open{display:grid;}
+  .weekgrid button{
+    position:relative;background:var(--panel);border:1px solid var(--knurl);border-radius:8px;
+    color:var(--steel);font-family:'Oswald',sans-serif;font-size:13px;padding:9px 0;cursor:pointer;transition:.1s;
+  }
+  .weekgrid button:active{transform:translateY(1px);}
+  .weekgrid button.cur{background:var(--molten);color:#140a04;border-color:transparent;font-weight:600;}
+  .weekgrid button.dl{border-style:dashed;color:#d8a23b;}
+  .weekgrid button.has::after{
+    content:"";position:absolute;top:4px;right:5px;width:5px;height:5px;border-radius:50%;background:var(--molten);
+  }
+  .weekgrid button.cur.has::after{background:#140a04;}
+
+  .phase{
+    background:var(--card);border:1px solid var(--knurl);border-left:3px solid var(--molten);
+    border-radius:10px;padding:10px 13px;margin-bottom:16px;
+  }
+  .phase.deload{border-left-color:#d8a23b;}
+  .phase .ptag{
+    font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--molten);margin-bottom:4px;
+  }
+  .phase.deload .ptag{color:#d8a23b;}
+  .phase .pcue{font-size:12px;color:var(--steel);line-height:1.45;}
+  .phase .pcue b{color:var(--bone);}
+
+  /* alternates line inside an open exercise */
+  .altline{
+    font-size:10.5px;color:var(--dim);line-height:1.4;padding:9px 0 2px;
+    border-top:1px solid #ffffff0a;margin-top:2px;
+  }
+  .altline b{color:var(--steel);font-weight:600;letter-spacing:.02em;}
+
   @media (prefers-reduced-motion: reduce){*{transition:none!important;}}
 </style>
 </head>
@@ -283,7 +341,7 @@
     <p class="kicker">The Logbook</p>
     <h1>4-Day Split</h1>
     <div class="sub">
-      <p>Tap a set to log weight and reps, then hammer the check. Values carry to next week as your starting point.</p>
+      <p>A 26-week progressive plan. Tap a set to log weight and reps, then hammer the check. Each set shows last week's load so you can beat it.</p>
       <div class="unit" id="unit">
         <button data-u="lb" class="on">lb</button>
         <button data-u="kg">kg</button>
@@ -316,6 +374,16 @@
 
   <section id="fuelView"></section>
 
+  <section id="weekWrap">
+    <div class="weekbar">
+      <button class="wnav" id="weekPrev" aria-label="Previous week">◀</button>
+      <button class="wsel" id="weekSel"></button>
+      <button class="wnav" id="weekNext" aria-label="Next week">▶</button>
+    </div>
+    <div class="weekgrid" id="weekGrid"></div>
+    <div class="phase" id="phaseBanner"></div>
+  </section>
+
   <nav class="days" id="dayTabs"></nav>
 
   <section class="session">
@@ -333,51 +401,81 @@
     <button class="btn primary" id="markAll">Mark All Done</button>
   </div>
 
-  <p class="note"><b>Why these targets:</b> each big muscle is trained once a week, so push every working set to within 1–2 reps of failure to make the volume count. Leg day uses leg press / split squats to spare the lower back. Forearms hit Mon + Thu, calves Tue + Fri.</p>
+  <p class="note"><b>Why these targets:</b> each big muscle is trained once a week, so push every working set to within 1–2 reps of failure to make the volume count. Leg day uses leg press / split squats to spare the lower back. Forearms hit Mon + Thu, calves Tue + Fri. <b>The 6-month arc:</b> the plan runs 26 weeks through Base → Volume → Strength → Intensity → Peak, with a <b>deload every 6th week</b> — push hard, then recover so you keep growing. If a machine's taken, use the <b>⇄ If taken</b> swaps under each exercise.</p>
 </div>
 
 <script>
 const PROGRAM = {
   mon:{title:"Chest + Forearm", short:"Chest·Forearm", ex:[
-    {id:"bench", n:"Bench Press", a:"Barbell or dumbbell", sets:4, rep:"6–8"},
-    {id:"incdb", n:"Incline DB Press", a:"", sets:3, rep:"8–10"},
-    {id:"fly", n:"Cable Fly / Pec Deck", a:"", sets:3, rep:"12–15"},
-    {id:"dip", n:"Dips / Machine Press", a:"Slight forward lean", sets:2, rep:"10–12"},
-    {id:"wrist", n:"Barbell Wrist Curl", a:"", sets:3, rep:"15"},
-    {id:"rwrist", n:"Reverse Wrist Curl", a:"", sets:3, rep:"15"},
+    {id:"bench", n:"Bench Press", a:"Barbell or dumbbell", sets:4, rep:"6–8", alt:["Dumbbell Press","Machine Chest Press","Push-ups"]},
+    {id:"incdb", n:"Incline DB Press", a:"", sets:3, rep:"8–10", alt:["Incline Barbell Press","Incline Machine Press","Low-to-High Cable Fly"]},
+    {id:"fly", n:"Cable Fly / Pec Deck", a:"", sets:3, rep:"12–15", alt:["Dumbbell Fly","Machine Fly","Banded Crossover"]},
+    {id:"dip", n:"Dips / Machine Press", a:"Slight forward lean", sets:2, rep:"10–12", alt:["Assisted Dip","Close-grip Push-up","Bench Dip"]},
+    {id:"wrist", n:"Barbell Wrist Curl", a:"", sets:3, rep:"15", alt:["Dumbbell Wrist Curl","Cable Wrist Curl"]},
+    {id:"rwrist", n:"Reverse Wrist Curl", a:"", sets:3, rep:"15", alt:["Reverse DB Wrist Curl","Reverse Cable Curl"]},
   ]},
   tue:{title:"Back + Calves", short:"Back·Calves", ex:[
-    {id:"pull", n:"Pull-ups / Lat Pulldown", a:"", sets:4, rep:"8–10"},
-    {id:"csrow", n:"Chest-Supported Row", a:"Easy on the lower back", sets:4, rep:"8–10"},
-    {id:"cablerow", n:"Seated Cable Row", a:"", sets:3, rep:"10–12"},
-    {id:"sapd", n:"Straight-Arm Pulldown", a:"", sets:3, rep:"12–15"},
-    {id:"scalf", n:"Standing Calf Raise", a:"", sets:4, rep:"12–15"},
-    {id:"secalf", n:"Seated Calf Raise", a:"", sets:3, rep:"15–20"},
+    {id:"pull", n:"Pull-ups / Lat Pulldown", a:"", sets:4, rep:"8–10", alt:["Assisted Pull-up","Lat Pulldown","Banded Pulldown"]},
+    {id:"csrow", n:"Chest-Supported Row", a:"Easy on the lower back", sets:4, rep:"8–10", alt:["Dumbbell Row","Machine Row","Seated Cable Row"]},
+    {id:"cablerow", n:"Seated Cable Row", a:"", sets:3, rep:"10–12", alt:["Dumbbell Row","Machine Row","Inverted Row"]},
+    {id:"sapd", n:"Straight-Arm Pulldown", a:"", sets:3, rep:"12–15", alt:["Dumbbell Pullover","Cable Pullover"]},
+    {id:"scalf", n:"Standing Calf Raise", a:"", sets:4, rep:"12–15", alt:["Smith Calf Raise","Dumbbell Calf Raise","Single-leg Calf Raise"]},
+    {id:"secalf", n:"Seated Calf Raise", a:"", sets:3, rep:"15–20", alt:["Leg-press Calf Press","Standing Calf Raise"]},
   ]},
   thu:{title:"Shoulders & Arms + Forearm", short:"Delts·Arms", ex:[
-    {id:"ohp", n:"Overhead Press", a:"Dumbbell or machine", sets:4, rep:"8–10"},
-    {id:"lat", n:"Lateral Raise", a:"", sets:4, rep:"12–15"},
-    {id:"rear", n:"Rear Delt Fly", a:"", sets:3, rep:"15"},
-    {id:"curl", n:"EZ-Bar Curl", a:"", sets:3, rep:"8–10"},
-    {id:"push", n:"Triceps Pushdown", a:"", sets:3, rep:"10–12"},
-    {id:"ham", n:"Hammer / Wrist Curl", a:"", sets:2, rep:"15"},
+    {id:"ohp", n:"Overhead Press", a:"Dumbbell or machine", sets:4, rep:"8–10", alt:["DB Shoulder Press","Machine Press","Arnold Press"]},
+    {id:"lat", n:"Lateral Raise", a:"", sets:4, rep:"12–15", alt:["Cable Lateral Raise","Machine Lateral Raise"]},
+    {id:"rear", n:"Rear Delt Fly", a:"", sets:3, rep:"15", alt:["Reverse Pec Deck","Cable Rear Delt","Band Pull-apart"]},
+    {id:"curl", n:"EZ-Bar Curl", a:"", sets:3, rep:"8–10", alt:["Dumbbell Curl","Cable Curl","Machine Curl"]},
+    {id:"push", n:"Triceps Pushdown", a:"", sets:3, rep:"10–12", alt:["Overhead Cable Extension","Skull Crusher","Bench Dip"]},
+    {id:"ham", n:"Hammer / Wrist Curl", a:"", sets:2, rep:"15", alt:["Cable Hammer Curl","DB Wrist Curl"]},
   ]},
   fri:{title:"Legs + Calves", short:"Legs·Calves", ex:[
-    {id:"press", n:"Leg Press / Hack Squat", a:"Spares the spine", sets:4, rep:"8–10"},
-    {id:"hamc", n:"Hamstring Curl / Light RDL", a:"", sets:3, rep:"10–12"},
-    {id:"lunge", n:"Lunges / Bulgarian Split Squat", a:"per leg", sets:3, rep:"10"},
-    {id:"ext", n:"Leg Extension", a:"", sets:3, rep:"12–15"},
-    {id:"scalf2", n:"Standing Calf Raise", a:"", sets:4, rep:"12–15"},
-    {id:"secalf2", n:"Seated Calf Raise", a:"", sets:3, rep:"20"},
+    {id:"press", n:"Leg Press / Hack Squat", a:"Spares the spine", sets:4, rep:"8–10", alt:["Goblet Squat","Smith Machine Squat","Bulgarian Split Squat"]},
+    {id:"hamc", n:"Hamstring Curl / Light RDL", a:"", sets:3, rep:"10–12", alt:["Seated Leg Curl","Dumbbell RDL","Nordic Curl"]},
+    {id:"lunge", n:"Lunges / Bulgarian Split Squat", a:"per leg", sets:3, rep:"10", alt:["Walking Lunge","Step-up","Reverse Lunge"]},
+    {id:"ext", n:"Leg Extension", a:"", sets:3, rep:"12–15", alt:["Sissy Squat","Goblet Squat"]},
+    {id:"scalf2", n:"Standing Calf Raise", a:"", sets:4, rep:"12–15", alt:["Smith Calf Raise","DB Calf Raise","Single-leg Calf Raise"]},
+    {id:"secalf2", n:"Seated Calf Raise", a:"", sets:3, rep:"20", alt:["Leg-press Calf Press","Standing Calf Raise"]},
   ]},
 };
 const DAYS = ["mon","tue","thu","fri"];
 const LABEL = {mon:"Mon",tue:"Tue",thu:"Thu",fri:"Fri"};
 
+// ── 26-week (6-month) periodized plan ─────────────────────────────────────────
+const WEEKS = 26;
+const MESO = [
+  {name:"Base",        cue:"Groove the movements with clean form. Stay ~3 reps from failure and aim for the top of each rep range."},
+  {name:"Volume",      cue:"Add a set where you can and push closer — about 2 reps from failure on your working sets."},
+  {name:"Strength",    cue:"Go heavier, lower in the rep range. Keep 1–2 reps in reserve on your top sets."},
+  {name:"Intensity",   cue:"Heaviest block. Top sets near failure with tight form — earn every rep."},
+  {name:"Peak / Test", cue:"Work up to a tough top set on the big lifts and see how far you've come, then take a real rest."},
+];
+const MESO_RPE = ["7","8","8–9","9","9–10"];
+function weekPlan(w){
+  const deload = (w % 6 === 0);                 // weeks 6, 12, 18, 24
+  const meso = Math.min(Math.floor((w-1)/6), MESO.length-1);
+  if (deload) return {phase:"Deload", deload:true, rpe:"5–6",
+    cue:"Recovery week. Drop to ~2 sets per exercise at about 60% of your usual weight and stop well short of failure. This is when the muscle you built actually grows."};
+  return {phase:MESO[meso].name, deload:false, rpe:MESO_RPE[meso], cue:MESO[meso].cue};
+}
+
 const KEY = "logbook:v1";
-let store = { unit:"lb", log:{}, open:{}, bw:"", mode:"train" };  // log["mon|bench|0"]={w,r,done}
+let store = { unit:"lb", log:{}, open:{}, bw:"", mode:"train", week:1 };  // log["1|mon|bench|0"]={w,r,done}
 let active = "mon";
 let saveT = null;
+
+// Bring older saves (no week dimension) up to date: old keys were day|ex|i, now week|day|ex|i.
+function migrate(){
+  if (typeof store.week !== "number" || store.week < 1) store.week = 1;
+  if (store.week > WEEKS) store.week = WEEKS;
+  for (const k of Object.keys(store.log)){
+    if ((k.match(/\|/g) || []).length === 2){      // legacy day|ex|i → week 1
+      store.log["1|" + k] = store.log[k];
+      delete store.log[k];
+    }
+  }
+}
 
 const PROTEIN = [
   {n:"Chicken breast", s:"6 oz, cooked", p:52},
@@ -427,8 +525,31 @@ const TIPS = [
   {h:"Recomp reality", d:"Building muscle while losing fat works best at maintenance calories with high protein and progressive overload. It's fast for newer/returning lifters, slower but real once you're trained — judge it by the mirror and the logbook over weeks, not days."},
 ];
 
-function sk(day,ex,i){return day+"|"+ex+"|"+i;}
-function getSet(day,ex,i){return store.log[sk(day,ex,i)] || {w:"",r:"",done:false};}
+function sk(w,day,ex,i){return w+"|"+day+"|"+ex+"|"+i;}
+function getSet(w,day,ex,i){return store.log[sk(w,day,ex,i)] || {w:"",r:"",done:false};}
+
+// most recent earlier week that has a logged weight for this exact set
+function lastLogged(w,day,ex,i){
+  for(let k=w-1;k>=1;k--){ const s=getSet(k,day,ex,i); if(s.w) return {w:s.w,r:s.r,week:k}; }
+  return null;
+}
+// heaviest logged set in a given week for an exercise
+function topSet(w,day,ex){
+  let best=null; const x=PROGRAM[day].ex.find(e=>e.id===ex);
+  for(let i=0;i<x.sets;i++){ const s=getSet(w,day,ex,i);
+    if(s.w){ const v=parseFloat(s.w)||0; if(!best||v>best.v) best={v, raw:s.w, r:s.r}; } }
+  return best ? `${best.raw}${store.unit} × ${best.r||"?"}` : "—";
+}
+// top set from the most recent earlier week that has any data
+function prevTop(w,day,ex){
+  for(let k=w-1;k>=1;k--){
+    let best=null; const x=PROGRAM[day].ex.find(e=>e.id===ex);
+    for(let i=0;i<x.sets;i++){ const s=getSet(k,day,ex,i);
+      if(s.w){ const v=parseFloat(s.w)||0; if(!best||v>best.v) best={v, raw:s.w, r:s.r}; } }
+    if(best) return {str:`${best.raw}${store.unit} × ${best.r||"?"}`, week:k};
+  }
+  return null;
+}
 
 let persistMode = "memory"; // cloud | local | memory
 
@@ -523,6 +644,7 @@ function initBackup(){
     try{
       const data = JSON.parse(raw);
       Object.assign(store, data);
+      migrate();
       persist(); render(); updateStatus("saved");
       document.getElementById("importBox").value = "";
       document.getElementById("backupPanel").classList.remove("open");
@@ -532,28 +654,36 @@ function initBackup(){
 
 async function load(){
   await detect();
+  migrate();
   render();
   initBackup();
   updateStatus();
 }
 
-function dayProgress(day){
+function dayProgress(w,day){
   let total=0, done=0;
-  PROGRAM[day].ex.forEach(x=>{ for(let i=0;i<x.sets;i++){ total++; if(getSet(day,x.id,i).done) done++; } });
+  PROGRAM[day].ex.forEach(x=>{ for(let i=0;i<x.sets;i++){ total++; if(getSet(w,day,x.id,i).done) done++; } });
   return {total,done};
+}
+function weekHasData(w){
+  for(const day of DAYS){ for(const x of PROGRAM[day].ex){ for(let i=0;i<x.sets;i++){
+    const s=getSet(w,day,x.id,i); if(s.done||s.w||s.r) return true;
+  }}}
+  return false;
 }
 
 function refreshProgress(){
+  const w=store.week;
   const bar=document.getElementById("plateBar");
   if(bar){ let idx=0;
     PROGRAM[active].ex.forEach(x=>{ for(let i=0;i<x.sets;i++){
-      const seg=bar.children[idx]; if(seg) seg.className="seg"+(getSet(active,x.id,i).done?" on":""); idx++;
+      const seg=bar.children[idx]; if(seg) seg.className="seg"+(getSet(w,active,x.id,i).done?" on":""); idx++;
     }});
   }
-  const prog=dayProgress(active);
+  const prog=dayProgress(w,active);
   const c=document.getElementById("sessCount"); if(c) c.innerHTML=`<b>${prog.done}</b> / ${prog.total} sets`;
   const tabs=document.querySelectorAll("#dayTabs .day-tab");
-  DAYS.forEach((d,di)=>{ const p=dayProgress(d); const pct=p.total?Math.round(p.done/p.total*100):0;
+  DAYS.forEach((d,di)=>{ const p=dayProgress(w,d); const pct=p.total?Math.round(p.done/p.total*100):0;
     const ring=tabs[di]&&tabs[di].querySelector(".ring i"); if(ring) ring.style.width=pct+"%"; });
 }
 
@@ -563,7 +693,7 @@ function render(){
     btn.classList.toggle("on", btn.dataset.m===store.mode);
     btn.onclick=()=>{ store.mode=btn.dataset.m; save(); render(); window.scrollTo({top:0,behavior:'smooth'}); };
   });
-  const trainEls=["#dayTabs",".session","#exList",".actions",".note"];
+  const trainEls=["#weekWrap","#dayTabs",".session","#exList",".actions",".note"];
   const fuel = store.mode==="fuel";
   trainEls.forEach(s=>{const el=document.querySelector(s); if(el) el.style.display = fuel?"none":"";});
   document.getElementById("fuelView").style.display = fuel?"block":"none";
@@ -576,11 +706,45 @@ function render(){
 
   if(fuel){ renderFuel(); return; }
 
+  const w = store.week;
+  const plan = weekPlan(w);
+  const goWeek = k => { store.week=Math.max(1,Math.min(WEEKS,k)); save(); render(); window.scrollTo({top:0,behavior:'smooth'}); };
+
+  // week selector
+  const wsel = document.getElementById("weekSel");
+  wsel.innerHTML = `<div class="wk">Week <b>${w}</b> <span>/ ${WEEKS}</span></div>
+    <div class="ph">${plan.deload ? `<span class="dl">◆ Deload</span> · recover` : `${plan.phase} block · RPE ${plan.rpe}`}</div>`;
+  wsel.onclick = ()=>{ document.getElementById("weekGrid").classList.toggle("open"); };
+  const prevB=document.getElementById("weekPrev"), nextB=document.getElementById("weekNext");
+  prevB.disabled = w<=1; nextB.disabled = w>=WEEKS;
+  prevB.onclick=()=>goWeek(w-1);
+  nextB.onclick=()=>goWeek(w+1);
+
+  // jump grid (all 26 weeks)
+  const grid=document.getElementById("weekGrid");
+  grid.innerHTML="";
+  for(let k=1;k<=WEEKS;k++){
+    const pk=weekPlan(k);
+    const b=document.createElement("button");
+    b.className=(k===w?"cur ":"")+(pk.deload?"dl ":"")+(weekHasData(k)?"has":"");
+    b.textContent=k;
+    b.title=pk.deload?`Week ${k} · Deload`:`Week ${k} · ${pk.phase}`;
+    b.onclick=()=>{ grid.classList.remove("open"); goWeek(k); };
+    grid.appendChild(b);
+  }
+
+  // phase banner
+  const ph=document.getElementById("phaseBanner");
+  ph.className="phase"+(plan.deload?" deload":"");
+  const beat = (!plan.deload && w>1) ? ` <b>Beat last week:</b> add a rep or a little weight on each lift.` : "";
+  ph.innerHTML=`<div class="ptag">${plan.deload?"Deload":plan.phase} · Week ${w} of ${WEEKS}</div>
+    <div class="pcue">${plan.cue}${beat}</div>`;
+
   // tabs
   const tabs = document.getElementById("dayTabs");
   tabs.innerHTML = "";
   DAYS.forEach(d=>{
-    const p = dayProgress(d);
+    const p = dayProgress(w,d);
     const pct = p.total? Math.round(p.done/p.total*100):0;
     const b = document.createElement("button");
     b.className = "day-tab"+(d===active?" active":"");
@@ -591,7 +755,7 @@ function render(){
   });
 
   // session header
-  const prog = dayProgress(active);
+  const prog = dayProgress(w,active);
   document.getElementById("sessTitle").innerHTML =
     `${LABEL[active]}<small>${PROGRAM[active].title}</small>`;
   document.getElementById("sessCount").innerHTML =
@@ -600,12 +764,11 @@ function render(){
   // plate bar
   const bar = document.getElementById("plateBar");
   bar.innerHTML = "";
-  let idx=0;
   PROGRAM[active].ex.forEach(x=>{
     for(let i=0;i<x.sets;i++){
       const seg=document.createElement("div");
-      seg.className="seg"+(getSet(active,x.id,i).done?" on":"");
-      bar.appendChild(seg); idx++;
+      seg.className="seg"+(getSet(w,active,x.id,i).done?" on":"");
+      bar.appendChild(seg);
     }
   });
 
@@ -614,7 +777,7 @@ function render(){
   list.innerHTML = "";
   PROGRAM[active].ex.forEach((x,xi)=>{
     let allDone=true, anyLog=false;
-    for(let i=0;i<x.sets;i++){const s=getSet(active,x.id,i); if(!s.done)allDone=false; if(s.w||s.r)anyLog=true;}
+    for(let i=0;i<x.sets;i++){const s=getSet(w,active,x.id,i); if(!s.done)allDone=false; if(s.w||s.r)anyLog=true;}
     const openKey = active+"|"+x.id;
     const isOpen = store.open[openKey] ?? (xi===0);
 
@@ -638,43 +801,54 @@ function render(){
     const sets=document.createElement("div");
     sets.className="sets";
     for(let i=0;i<x.sets;i++){
-      const s=getSet(active,x.id,i);
+      const s=getSet(w,active,x.id,i);
+      const last=lastLogged(w,active,x.id,i);          // weight from a previous week, as a target
+      const wPh=last? last.w : "—";
       const row=document.createElement("div");
       row.className="set-row"+((s.w||s.r)?" logged":"");
       row.innerHTML=`
         <div class="sl">Set ${i+1}</div>
         <div class="field"><span class="tag">${store.unit}</span>
-          <input inputmode="decimal" placeholder="—" value="${s.w}" data-k="w"></div>
+          <input inputmode="decimal" placeholder="${wPh}" value="${s.w}" data-k="w"></div>
         <div class="field"><span class="tag">reps</span>
           <input inputmode="numeric" placeholder="${x.rep}" value="${s.r}" data-k="r"></div>
         <div class="chk${s.done?" on":""}">${s.done?"✓":"○"}</div>`;
       const [wIn,rIn]=row.querySelectorAll("input");
       const chk=row.querySelector(".chk");
       const commit=()=>{                     // write current field values, no rebuild
-        const cur=getSet(active,x.id,i);
-        const w=wIn.value.trim(), r=rIn.value.trim();
-        store.log[sk(active,x.id,i)]={w, r, done:cur.done};
-        row.classList.toggle("logged", !!(w||r));
+        const cur=getSet(w,active,x.id,i);
+        const wv=wIn.value.trim(), r=rIn.value.trim();
+        store.log[sk(w,active,x.id,i)]={w:wv, r, done:cur.done};
+        row.classList.toggle("logged", !!(wv||r));
         save();
       };
       ["input","change","blur"].forEach(ev=>{ wIn.addEventListener(ev,commit); rIn.addEventListener(ev,commit); });
       chk.onclick=()=>{                       // toggle done in place
         const nowDone=!chk.classList.contains("on");
-        store.log[sk(active,x.id,i)]={w:wIn.value.trim(), r:rIn.value.trim(), done:nowDone};
+        store.log[sk(w,active,x.id,i)]={w:wIn.value.trim(), r:rIn.value.trim(), done:nowDone};
         chk.classList.toggle("on",nowDone);
         chk.textContent=nowDone?"✓":"○";
         row.classList.toggle("logged", !!(wIn.value.trim()||rIn.value.trim()));
-        let all=true; for(let k=0;k<x.sets;k++){ if(!getSet(active,x.id,k).done) all=false; }
+        let all=true; for(let k=0;k<x.sets;k++){ if(!getSet(w,active,x.id,k).done) all=false; }
         card.classList.toggle("done-all",all);
         refreshProgress(); save();
       };
       sets.appendChild(row);
     }
+
+    // alternates — swap in if the machine/equipment is taken
+    const altDiv=document.createElement("div");
+    altDiv.className="altline";
+    altDiv.innerHTML=`<b>⇄ If taken:</b> ${x.alt.join(" · ")}`;
+    sets.appendChild(altDiv);
+
     const foot=document.createElement("div");
     foot.className="ex-foot";
+    const pt=prevTop(w,active,x.id);
     foot.innerHTML = anyLog
-      ? `<span class="ghost">Last logged top set: <b>${topSet(active,x.id)}</b></span>`
-      : `<span class="ghost">No history yet — log your first set</span>`;
+      ? `<span class="ghost">This week top set: <b>${topSet(w,active,x.id)}</b></span>`
+      : (pt ? `<span class="ghost">Week ${pt.week}: <b>${pt.str}</b> — aim to beat it</span>`
+            : `<span class="ghost">No history yet — log your first set</span>`);
     sets.appendChild(foot);
     card.appendChild(sets);
     list.appendChild(card);
@@ -682,15 +856,15 @@ function render(){
 
   document.getElementById("resetDay").onclick=()=>{
     PROGRAM[active].ex.forEach(x=>{ for(let i=0;i<x.sets;i++){
-      const s=getSet(active,x.id,i);
-      store.log[sk(active,x.id,i)]={w:s.w,r:s.r,done:false}; // keep weights, clear checks
+      const s=getSet(w,active,x.id,i);
+      store.log[sk(w,active,x.id,i)]={w:s.w,r:s.r,done:false}; // keep weights, clear checks
     }});
     save(); render();
   };
   document.getElementById("markAll").onclick=()=>{
     PROGRAM[active].ex.forEach(x=>{ for(let i=0;i<x.sets;i++){
-      const s=getSet(active,x.id,i);
-      store.log[sk(active,x.id,i)]={w:s.w,r:s.r,done:true};
+      const s=getSet(w,active,x.id,i);
+      store.log[sk(w,active,x.id,i)]={w:s.w,r:s.r,done:true};
     }});
     save(); render();
   };
@@ -749,14 +923,6 @@ function renderFuel(){
   bwIn.addEventListener("input", ()=>{ store.bw=bwIn.value.trim(); save(); });
   bwIn.addEventListener("change", ()=>{ render(); });
   bwIn.addEventListener("blur", ()=>{ render(); });
-}
-
-function topSet(day,ex){
-  let best=null;
-  const x=PROGRAM[day].ex.find(e=>e.id===ex);
-  for(let i=0;i<x.sets;i++){ const s=getSet(day,ex,i);
-    if(s.w){ const w=parseFloat(s.w)||0; if(!best||w>best.w) best={w, raw:s.w, r:s.r}; } }
-  return best ? `${best.raw}${store.unit} × ${best.r||"?"}` : "—";
 }
 
 load();

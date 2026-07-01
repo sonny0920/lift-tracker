@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>The Logbook — 4-Day Split</title>
+<meta name="theme-color" content="#0E0F11">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Logbook">
+<link rel="apple-touch-icon" href="icon-180.png">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
@@ -366,6 +372,70 @@
   }
   .altline b{color:var(--steel);font-weight:600;letter-spacing:.02em;}
 
+  /* progression cue */
+  .ex-foot .ghost.prog{color:var(--molten);}
+  .ex-foot .ghost.prog b{color:var(--molten);}
+  .ex.progd{border-color:var(--molten-dim);}
+
+  /* backup reminder nudge */
+  .nudge{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:#1d150f;border:1px solid var(--molten-dim);border-radius:10px;
+    padding:9px 12px;margin:-4px 0 16px;font-size:11.5px;color:var(--bone);line-height:1.35;
+  }
+  .nudge button{
+    flex:none;background:var(--molten);border:0;border-radius:7px;color:#140a04;font-weight:600;
+    font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:7px 11px;cursor:pointer;
+  }
+  .nudge button:active{transform:translateY(1px);}
+
+  /* plate calculator */
+  .platecalc{display:none;background:var(--card);border:1px solid var(--knurl);border-radius:13px;padding:15px;margin:0 0 8px;}
+  .platecalc.open{display:block;}
+  .platecalc h3{font-family:'Oswald',sans-serif;font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--molten);margin:0 0 12px;}
+  .pc-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .pc-row label{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.04em;color:var(--steel);text-transform:uppercase;flex:none;width:64px;}
+  .pc-row input{
+    flex:1;background:var(--panel);border:1px solid var(--knurl);border-radius:8px;color:var(--bone);
+    font-family:'Oswald',sans-serif;font-size:18px;padding:9px 10px;text-align:center;outline:none;
+  }
+  .pc-row input:focus{border-color:var(--molten);}
+  .pc-row .u{font-family:'Oswald',sans-serif;color:var(--dim);font-size:13px;text-transform:uppercase;flex:none;}
+  .pc-bars{display:flex;gap:6px;flex:1;}
+  .pc-bars button{
+    flex:1;background:var(--panel);border:1px solid var(--knurl);border-radius:8px;color:var(--steel);
+    font-family:'Oswald',sans-serif;font-size:13px;padding:8px 0;cursor:pointer;
+  }
+  .pc-bars button.on{background:var(--molten);color:#140a04;border-color:transparent;font-weight:600;}
+  .pc-out{background:var(--panel);border:1px solid var(--knurl);border-radius:10px;padding:12px;margin-top:4px;text-align:center;}
+  .pc-out .perside{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
+  .pc-plates{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;}
+  .pc-plate{
+    font-family:'Oswald',sans-serif;font-weight:600;font-size:14px;color:#140a04;
+    background:linear-gradient(180deg,#FF7A45,#FF5A1F 60%,#d8430f);border-radius:6px;padding:7px 11px;
+  }
+  .pc-note{font-size:11px;color:var(--steel);margin-top:10px;line-height:1.4;}
+  .pc-note b{color:var(--bone);}
+
+  /* rest timer bar (fixed) */
+  .restbar{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:50;
+    width:calc(100% - 32px);max-width:528px;
+    display:flex;align-items:stretch;gap:8px;
+    background:var(--raise);border:1px solid var(--molten-dim);border-radius:14px;
+    padding:8px;box-shadow:0 8px 26px rgba(0,0,0,.5);
+  }
+  .restbar.ring{border-color:var(--molten);box-shadow:0 0 22px rgba(255,90,31,.5);}
+  .restbar .rt-adj,.restbar .rt-skip{
+    flex:none;background:var(--panel);border:1px solid var(--knurl);border-radius:10px;color:var(--bone);
+    font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.03em;cursor:pointer;padding:0 14px;
+  }
+  .restbar .rt-adj:active,.restbar .rt-skip:active{transform:translateY(1px);}
+  .restbar .rt-skip{width:46px;padding:0;color:var(--steel);font-size:16px;}
+  .restbar .rt-mid{flex:1;text-align:center;display:flex;flex-direction:column;justify-content:center;}
+  .restbar .rt-time{font-family:'Oswald',sans-serif;font-weight:700;font-size:26px;line-height:1;color:var(--molten);letter-spacing:.02em;}
+  .restbar .rt-lbl{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--steel);margin-top:2px;}
+
   @media (prefers-reduced-motion: reduce){*{transition:none!important;}}
 </style>
 </head>
@@ -394,9 +464,20 @@
     <button class="bkp" id="backupBtn">Backup</button>
   </div>
 
+  <div class="nudge" id="backupNudge" hidden>
+    <span id="nudgeText"></span>
+    <button id="nudgeBtn">Back up now</button>
+  </div>
+
   <div class="backup" id="backupPanel">
     <h3>Backup &amp; Restore</h3>
-    <p>This app can't keep your data after you close the Claude app on mobile. So after each workout, tap <b>Save to Phone</b> and send the code to your Notes app. Next time, paste it back below and tap Restore.</p>
+    <p>Your data is saved on this device only. To keep it safe (and move it between phone and computer), back it up after each workout. The most reliable way is <b>Download File</b>.</p>
+    <div class="brow">
+      <button class="btn primary" id="downloadBtn" style="flex:1">⬇ Download File</button>
+      <button class="btn" id="restoreFileBtn" style="flex:1">↥ Restore File</button>
+    </div>
+    <input type="file" id="fileInput" accept="application/json,.json" hidden>
+    <p style="margin-top:14px">Or copy a text code (paste it into Notes, or into the box below to restore):</p>
     <textarea id="exportBox" readonly></textarea>
     <div class="brow">
       <button class="btn primary" id="shareBtn" style="flex:1">Save to Phone</button>
@@ -435,10 +516,23 @@
 
   <div class="actions">
     <button class="btn" id="resetDay">Reset Day</button>
+    <button class="btn" id="plateBtn">🏋 Plates</button>
     <button class="btn primary" id="markAll">Mark All Done</button>
   </div>
 
+  <div class="platecalc" id="plateCalc"></div>
+
   <p class="note"><b>Why these targets:</b> each big muscle is trained once a week, so push every working set to within 1–2 reps of failure to make the volume count. Leg day uses leg press / split squats to spare the lower back. Forearms hit Mon + Thu, calves Tue + Fri. <b>The 6-month arc:</b> the plan runs 26 weeks through Base → Volume → Strength → Intensity → Peak, with a <b>deload every 6th week</b> — push hard, then recover so you keep growing. If a machine's taken, use the <b>⇄ If taken</b> swaps under each exercise.</p>
+</div>
+
+<div class="restbar" id="restBar" hidden>
+  <button class="rt-adj" id="restMinus">−15</button>
+  <div class="rt-mid">
+    <div class="rt-time" id="restTime">1:30</div>
+    <div class="rt-lbl" id="restLbl">Rest</div>
+  </div>
+  <button class="rt-adj" id="restPlus">+15</button>
+  <button class="rt-skip" id="restSkip">✕</button>
 </div>
 
 <script>
@@ -498,7 +592,8 @@ function weekPlan(w){
 }
 
 const KEY = "logbook:v1";
-let store = { unit:"lb", log:{}, open:{}, bw:"", mode:"train", week:1, chartEx:"", chartMetric:"weight" };  // log["1|mon|bench|0"]={w,r,done}
+let store = { unit:"lb", log:{}, open:{}, bw:"", mode:"train", week:1, chartEx:"", chartMetric:"weight",
+              restSec:120, barLb:45, barKg:20, lastBackupCount:0 };  // log["1|mon|bench|0"]={w,r,done}
 let active = "mon";
 let saveT = null;
 
@@ -586,6 +681,22 @@ function prevTop(w,day,ex){
     if(best) return {str:`${best.raw}${store.unit} × ${best.r||"?"}`, week:k};
   }
   return null;
+}
+
+// ── auto-progression: nail the top of the rep range on every set → add weight ──
+function topRep(repStr){ const m=(repStr+"").match(/(\d+)(?!.*\d)/); return m?parseInt(m[1],10):null; }
+function incFor(x){
+  const big=/press|squat|pull|row|deadlift|bench|leg|rdl|hack|lunge/i.test(x.n);
+  return store.unit==="lb" ? (big?10:5) : (big?5:2.5);
+}
+// every set done AND every set's reps met the top of the range
+function hitProgression(w,day,x){
+  const tr=topRep(x.rep); if(tr==null) return false;
+  for(let i=0;i<x.sets;i++){ const s=getSet(w,day,x.id,i);
+    if(!s.done) return false;
+    if((parseFloat(s.r)||0) < tr) return false;
+  }
+  return true;
 }
 
 let persistMode = "memory"; // cloud | local | memory
@@ -678,15 +789,176 @@ function initBackup(){
     if(!raw) return;
     const a = raw.indexOf("{"), b = raw.lastIndexOf("}");   // tolerate pasted notes / preamble
     if(a !== -1 && b !== -1) raw = raw.slice(a, b+1);
-    try{
-      const data = JSON.parse(raw);
-      Object.assign(store, data);
-      migrate();
-      persist(); render(); updateStatus("saved");
-      document.getElementById("importBox").value = "";
-      document.getElementById("backupPanel").classList.remove("open");
-    }catch(e){ alert("That code didn't read correctly — paste the full text you saved, including the curly braces."); }
+    applyRestore(raw);
+    document.getElementById("importBox").value = "";
   };
+
+  // ---- file-based backup (most reliable) ----
+  document.getElementById("downloadBtn").onclick = function(){
+    const stamp = new Date().toISOString().slice(0,10);
+    const blob = new Blob([JSON.stringify(store)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `lift-log-backup-${stamp}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    markBackedUp();
+    this.textContent = "Saved ✓";
+    setTimeout(()=>{ this.textContent = "⬇ Download File"; }, 1600);
+  };
+  const fileInput = document.getElementById("fileInput");
+  document.getElementById("restoreFileBtn").onclick = ()=> fileInput.click();
+  fileInput.onchange = ()=>{
+    const f = fileInput.files && fileInput.files[0];
+    if(!f) return;
+    const r = new FileReader();
+    r.onload = ()=> applyRestore(String(r.result));
+    r.readAsText(f);
+    fileInput.value = "";
+  };
+}
+
+// shared restore: tolerant parse + migrate + refresh
+function applyRestore(raw){
+  raw = String(raw).trim();
+  const a = raw.indexOf("{"), b = raw.lastIndexOf("}");
+  if(a !== -1 && b !== -1) raw = raw.slice(a, b+1);
+  try{
+    const data = JSON.parse(raw);
+    Object.assign(store, data);
+    migrate();
+    persist(); render(); updateStatus("saved");
+    markBackedUp();               // a restored file counts as a known-good backup
+    document.getElementById("backupPanel").classList.remove("open");
+  }catch(e){ alert("That backup didn't read correctly — make sure you picked the right .json file (or pasted the full code including the curly braces)."); }
+}
+
+/* ── backup reminder ───────────────────────────────────────────────────────── */
+function countDoneSets(){
+  let n=0; for(const k in store.log){ if(store.log[k] && store.log[k].done) n++; }
+  return n;
+}
+function markBackedUp(){ store.lastBackupCount = countDoneSets(); save(); updateNudge(); }
+function updateNudge(){
+  const el = document.getElementById("backupNudge");
+  if(!el) return;
+  const since = countDoneSets() - (store.lastBackupCount||0);
+  if(persistMode !== "cloud" && since >= 10){
+    document.getElementById("nudgeText").innerHTML =
+      `You've logged <b>${since}</b> sets since your last backup. Save it so you don't lose progress.`;
+    el.hidden = false;
+  } else {
+    el.hidden = true;
+  }
+}
+
+/* ── rest timer ────────────────────────────────────────────────────────────── */
+let restLeft=0, restTid=null, audioCtx=null;
+function fmtClock(s){ const m=Math.floor(s/60); const ss=String(s%60).padStart(2,"0"); return m+":"+ss; }
+function paintRest(){
+  const t=document.getElementById("restTime"); if(t) t.textContent=fmtClock(Math.max(0,restLeft));
+}
+function startRest(){
+  restLeft = store.restSec || 120;
+  const bar=document.getElementById("restBar");
+  bar.hidden=false; bar.classList.remove("ring");
+  document.getElementById("restLbl").textContent="Rest";
+  paintRest();
+  clearInterval(restTid);
+  restTid=setInterval(()=>{
+    restLeft--;
+    paintRest();
+    if(restLeft<=0){ clearInterval(restTid); restDone(); }
+  },1000);
+}
+function restDone(){
+  const bar=document.getElementById("restBar");
+  bar.classList.add("ring");
+  document.getElementById("restLbl").textContent="Go!";
+  document.getElementById("restTime").textContent="0:00";
+  buzz();
+  setTimeout(hideRest, 4000);
+}
+function hideRest(){ clearInterval(restTid); const b=document.getElementById("restBar"); if(b){ b.hidden=true; b.classList.remove("ring"); } }
+function adjustRest(delta){
+  if(document.getElementById("restBar").hidden) return;
+  restLeft=Math.max(5, restLeft+delta);
+  store.restSec=Math.max(15, (store.restSec||120)+delta); save();  // remember preference
+  document.getElementById("restBar").classList.remove("ring");
+  document.getElementById("restLbl").textContent="Rest";
+  paintRest();
+}
+function buzz(){
+  if(navigator.vibrate) navigator.vibrate([120,60,120]);
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    [0,0.18,0.36].forEach(t=>{
+      const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.frequency.value=880; o.connect(g); g.connect(audioCtx.destination);
+      const at=audioCtx.currentTime+t;
+      g.gain.setValueAtTime(0.0001,at); g.gain.exponentialRampToValueAtTime(0.25,at+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001,at+0.14);
+      o.start(at); o.stop(at+0.15);
+    });
+  }catch(e){}
+}
+function initRest(){
+  document.getElementById("restMinus").onclick=()=>adjustRest(-15);
+  document.getElementById("restPlus").onclick=()=>adjustRest(15);
+  document.getElementById("restSkip").onclick=hideRest;
+}
+
+/* ── plate calculator ──────────────────────────────────────────────────────── */
+const PLATES = { lb:[45,35,25,10,5,2.5], kg:[25,20,15,10,5,2.5,1.25] };
+function initPlateCalc(){
+  document.getElementById("plateBtn").onclick=()=>{
+    const p=document.getElementById("plateCalc");
+    if(p.classList.toggle("open")){ renderPlateCalc(); p.scrollIntoView({behavior:"smooth",block:"nearest"}); }
+  };
+}
+function renderPlateCalc(){
+  const p=document.getElementById("plateCalc");
+  const unit=store.unit;
+  const bar = unit==="lb" ? (store.barLb||45) : (store.barKg||20);
+  p.innerHTML=`
+    <h3>Plate Calculator</h3>
+    <div class="pc-row"><label>Bar</label>
+      <div class="pc-bars" id="pcBars">${
+        (unit==="lb"?[45,35,15]:[20,15,10]).map(b=>`<button data-b="${b}" class="${b===bar?"on":""}">${b}</button>`).join("")
+      }</div><span class="u">${unit}</span></div>
+    <div class="pc-row"><label>Target</label>
+      <input id="pcTarget" inputmode="decimal" placeholder="e.g. ${unit==="lb"?135:60}"><span class="u">${unit}</span></div>
+    <div class="pc-out" id="pcOut"><div class="perside">Enter a target weight</div></div>
+    <p class="pc-note">Shows the plates for <b>one side</b> of an Olympic bar. Uses ${unit} plates: ${PLATES[unit].join(", ")}.</p>`;
+  const bars=p.querySelectorAll("#pcBars button");
+  bars.forEach(b=>b.onclick=()=>{ const v=parseFloat(b.dataset.b);
+    if(unit==="lb") store.barLb=v; else store.barKg=v; save();
+    bars.forEach(x=>x.classList.toggle("on",x===b)); computePlates();
+  });
+  const t=document.getElementById("pcTarget");
+  t.addEventListener("input", computePlates);
+}
+function computePlates(){
+  const unit=store.unit;
+  const bar = unit==="lb" ? (store.barLb||45) : (store.barKg||20);
+  const out=document.getElementById("pcOut");
+  const target=parseFloat(document.getElementById("pcTarget").value)||0;
+  if(target<=0){ out.innerHTML=`<div class="perside">Enter a target weight</div>`; return; }
+  if(target<bar){ out.innerHTML=`<div class="perside">Target is below the empty bar (${bar}${unit})</div>`; return; }
+  let perSide=(target-bar)/2, remaining=perSide, chips=[];
+  for(const pl of PLATES[unit]){ let count=Math.floor(remaining/pl+1e-9); while(count-->0){ chips.push(pl); remaining=Math.round((remaining-pl)*100)/100; } }
+  const loaded = bar + 2*(perSide-remaining);
+  out.innerHTML = `
+    <div class="perside">Per side (${perSide%1?perSide:perSide}${unit})</div>
+    <div class="pc-plates">${chips.length?chips.map(c=>`<span class="pc-plate">${c}</span>`).join(""):`<span class="perside">just the bar</span>`}</div>
+    ${remaining>0.01?`<p class="pc-note">Closest loadable: <b>${loaded}${unit}</b> (${remaining}${unit}/side short — no smaller plate).</p>`:``}`;
+}
+
+/* ── offline / PWA ─────────────────────────────────────────────────────────── */
+function initPWA(){
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", ()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
+  }
 }
 
 async function load(){
@@ -694,6 +966,9 @@ async function load(){
   migrate();
   render();
   initBackup();
+  initRest();
+  initPlateCalc();
+  initPWA();
   updateStatus();
 }
 
@@ -732,8 +1007,9 @@ function render(){
   });
   const view = store.mode;
   const isTrain = view==="train";
-  const trainEls=["#weekWrap","#dayTabs",".session","#exList",".actions",".note"];
+  const trainEls=["#weekWrap","#dayTabs",".session","#exList",".actions",".platecalc",".note"];
   trainEls.forEach(s=>{const el=document.querySelector(s); if(el) el.style.display = isTrain?"":"none";});
+  if(!isTrain) hideRest();
   document.getElementById("fuelView").style.display = view==="fuel"?"block":"none";
   document.getElementById("progressView").style.display = view==="chart"?"block":"none";
 
@@ -818,11 +1094,12 @@ function render(){
   PROGRAM[active].ex.forEach((x,xi)=>{
     let allDone=true, anyLog=false;
     for(let i=0;i<x.sets;i++){const s=getSet(w,active,x.id,i); if(!s.done)allDone=false; if(s.w||s.r)anyLog=true;}
+    const progNow = hitProgression(w,active,x);
     const openKey = active+"|"+x.id;
     const isOpen = store.open[openKey] ?? (xi===0);
 
     const card=document.createElement("div");
-    card.className="ex"+(isOpen?" open":"")+(allDone?" done-all":"");
+    card.className="ex"+(isOpen?" open":"")+(allDone?" done-all":"")+(progNow?" progd":"");
 
     const head=document.createElement("div");
     head.className="ex-head";
@@ -843,7 +1120,10 @@ function render(){
     for(let i=0;i<x.sets;i++){
       const s=getSet(w,active,x.id,i);
       const last=lastLogged(w,active,x.id,i);          // weight from a previous week, as a target
-      const wPh=last? last.w : "—";
+      // if that week nailed the top reps, suggest the next jump up
+      let wPh="—";
+      if(last){ wPh = hitProgression(last.week,active,x)
+        ? Math.round(((parseFloat(last.w)||0)+incFor(x))*100)/100 : last.w; }
       const row=document.createElement("div");
       row.className="set-row"+((s.w||s.r)?" logged":"");
       row.innerHTML=`
@@ -871,7 +1151,9 @@ function render(){
         row.classList.toggle("logged", !!(wIn.value.trim()||rIn.value.trim()));
         let all=true; for(let k=0;k<x.sets;k++){ if(!getSet(w,active,x.id,k).done) all=false; }
         card.classList.toggle("done-all",all);
-        refreshProgress(); save();
+        card.classList.toggle("progd", hitProgression(w,active,x));
+        if(nowDone) startRest();
+        refreshProgress(); updateNudge(); save();
       };
       sets.appendChild(row);
     }
@@ -885,10 +1167,18 @@ function render(){
     const foot=document.createElement("div");
     foot.className="ex-foot";
     const pt=prevTop(w,active,x.id);
-    foot.innerHTML = anyLog
-      ? `<span class="ghost">This week top set: <b>${topSet(w,active,x.id)}</b></span>`
-      : (pt ? `<span class="ghost">Week ${pt.week}: <b>${pt.str}</b> — aim to beat it</span>`
-            : `<span class="ghost">No history yet — log your first set</span>`);
+    const inc=incFor(x);
+    if(progNow){
+      foot.innerHTML = `<span class="ghost prog">🔥 Hit every top rep — go up ~${inc}${store.unit} next week</span>`;
+    } else if(anyLog){
+      foot.innerHTML = `<span class="ghost">This week top set: <b>${topSet(w,active,x.id)}</b></span>`;
+    } else if(pt && hitProgression(pt.week,active,x)){
+      foot.innerHTML = `<span class="ghost prog">▲ Last time you nailed it — try +${inc}${store.unit} today</span>`;
+    } else if(pt){
+      foot.innerHTML = `<span class="ghost">Week ${pt.week}: <b>${pt.str}</b> — aim to beat it</span>`;
+    } else {
+      foot.innerHTML = `<span class="ghost">No history yet — log your first set</span>`;
+    }
     sets.appendChild(foot);
     card.appendChild(sets);
     list.appendChild(card);
@@ -908,6 +1198,8 @@ function render(){
     }});
     save(); render();
   };
+
+  updateNudge();
 }
 
 function renderFuel(){

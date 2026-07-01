@@ -436,6 +436,69 @@
   .restbar .rt-time{font-family:'Oswald',sans-serif;font-weight:700;font-size:26px;line-height:1;color:var(--molten);letter-spacing:.02em;}
   .restbar .rt-lbl{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--steel);margin-top:2px;}
 
+  /* PR badge on a set + celebration toast */
+  .set-row .sl{white-space:nowrap;}
+  .prtoast{
+    position:fixed;left:50%;top:16px;transform:translateX(-50%) translateY(-12px);z-index:60;
+    background:linear-gradient(180deg,#FF7A45,#FF5A1F 60%,#d8430f);color:#160b04;
+    font-family:'Oswald',sans-serif;font-weight:600;font-size:13.5px;letter-spacing:.02em;
+    padding:11px 16px;border-radius:11px;box-shadow:0 8px 26px rgba(255,90,31,.45);
+    max-width:calc(100% - 32px);opacity:0;transition:opacity .25s, transform .25s;pointer-events:none;
+  }
+  .prtoast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .prtoast b{font-weight:700;}
+
+  /* edit toggle */
+  .editrow{display:flex;justify-content:flex-end;margin:-6px 0 12px;}
+  .editbtn{
+    background:transparent;border:1px solid var(--knurl);border-radius:8px;color:var(--steel);
+    font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:7px 13px;cursor:pointer;transition:.12s;
+  }
+  .editbtn:active{transform:translateY(1px);}
+  .editbtn.on{background:var(--molten);border-color:transparent;color:#140a04;font-weight:600;}
+
+  /* program editor */
+  .ed-intro{font-size:12px;color:var(--steel);line-height:1.45;margin:0 2px 14px;}
+  .ed-intro b{color:var(--bone);}
+  .edcard{background:var(--card);border:1px solid var(--knurl);border-radius:13px;padding:13px 14px;margin-bottom:11px;}
+  .ed-top{display:flex;align-items:center;gap:9px;margin-bottom:11px;}
+  .ed-num{font-family:'Oswald',sans-serif;font-weight:700;font-size:13px;color:var(--dim);flex:none;}
+  .ed-name{
+    flex:1;min-width:0;background:var(--panel);border:1px solid var(--knurl);border-radius:8px;color:var(--bone);
+    font-family:'Oswald',sans-serif;font-size:15px;padding:9px 10px;outline:none;
+  }
+  .ed-name:focus,.ed-rep:focus,.ed-note:focus,.ed-alt:focus{border-color:var(--molten);}
+  .ed-move{display:flex;gap:4px;flex:none;}
+  .ed-mv{
+    width:34px;background:var(--panel);border:1px solid var(--knurl);border-radius:8px;color:var(--bone);
+    font-size:12px;padding:8px 0;cursor:pointer;
+  }
+  .ed-mv:disabled{opacity:.3;cursor:default;}
+  .ed-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;}
+  .ed-f{display:flex;flex-direction:column;gap:5px;}
+  .ed-f.wide{margin-bottom:9px;}
+  .ed-f > span{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);}
+  .ed-rep,.ed-note,.ed-alt{
+    background:var(--panel);border:1px solid var(--knurl);border-radius:8px;color:var(--bone);
+    font-family:'Inter',sans-serif;font-size:13.5px;padding:9px 10px;outline:none;width:100%;
+  }
+  .ed-rep{font-family:'Oswald',sans-serif;text-align:center;font-size:15px;}
+  .ed-step{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--knurl);border-radius:8px;overflow:hidden;}
+  .ed-step button{width:40px;background:transparent;border:0;color:var(--bone);font-size:18px;padding:8px 0;cursor:pointer;}
+  .ed-step b{font-family:'Oswald',sans-serif;font-size:17px;color:var(--molten);}
+  .ed-del{
+    width:100%;background:transparent;border:1px solid var(--molten-dim);border-radius:8px;color:var(--molten);
+    font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:9px;cursor:pointer;margin-top:2px;
+  }
+  .ed-del:active{transform:translateY(1px);}
+  .ed-add{
+    width:100%;background:var(--panel);border:1px dashed var(--knurl);border-radius:11px;color:var(--steel);
+    font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:13px;cursor:pointer;margin-bottom:12px;
+  }
+  .ed-add:active{transform:translateY(1px);}
+  .ed-actions{display:flex;gap:10px;}
+  .ed-actions .btn{flex:1;}
+
   @media (prefers-reduced-motion: reduce){*{transition:none!important;}}
 </style>
 </head>
@@ -512,6 +575,8 @@
     <div class="platebar" id="plateBar"></div>
   </section>
 
+  <div class="editrow" id="editRow"><button class="editbtn" id="editToggle">✎ Edit exercises</button></div>
+
   <main id="exList"></main>
 
   <div class="actions">
@@ -525,6 +590,8 @@
   <p class="note"><b>Why these targets:</b> each big muscle is trained once a week, so push every working set to within 1–2 reps of failure to make the volume count. Leg day uses leg press / split squats to spare the lower back. Forearms hit Mon + Thu, calves Tue + Fri. <b>The 6-month arc:</b> the plan runs 26 weeks through Base → Volume → Strength → Intensity → Peak, with a <b>deload every 6th week</b> — push hard, then recover so you keep growing. If a machine's taken, use the <b>⇄ If taken</b> swaps under each exercise.</p>
 </div>
 
+<div class="prtoast" id="prToast" hidden></div>
+
 <div class="restbar" id="restBar" hidden>
   <button class="rt-adj" id="restMinus">−15</button>
   <div class="rt-mid">
@@ -536,7 +603,7 @@
 </div>
 
 <script>
-const PROGRAM = {
+const DEFAULT_PROGRAM = {
   mon:{title:"Chest + Forearm", short:"Chest·Forearm", ex:[
     {id:"bench", n:"Bench Press", a:"Barbell or dumbbell", sets:4, rep:"6–8", alt:["Dumbbell Press","Machine Chest Press","Push-ups"]},
     {id:"incdb", n:"Incline DB Press", a:"", sets:3, rep:"8–10", alt:["Incline Barbell Press","Incline Machine Press","Low-to-High Cable Fly"]},
@@ -572,6 +639,8 @@ const PROGRAM = {
 };
 const DAYS = ["mon","tue","thu","fri"];
 const LABEL = {mon:"Mon",tue:"Tue",thu:"Thu",fri:"Fri"};
+let PROGRAM;              // active, editable program — seeded from DEFAULT_PROGRAM in migrate()
+let editing = false;     // program-edit mode (not persisted)
 
 // ── 26-week (6-month) periodized plan ─────────────────────────────────────────
 const WEEKS = 26;
@@ -593,7 +662,7 @@ function weekPlan(w){
 
 const KEY = "logbook:v1";
 let store = { unit:"lb", log:{}, open:{}, bw:"", mode:"train", week:1, chartEx:"", chartMetric:"weight",
-              restSec:120, barLb:45, barKg:20, lastBackupCount:0 };  // log["1|mon|bench|0"]={w,r,done}
+              restSec:120, barLb:45, barKg:20, lastBackupCount:0, program:null, bwLog:{} };  // log["1|mon|bench|0"]={w,r,done}
 let active = "mon";
 let saveT = null;
 
@@ -607,7 +676,27 @@ function migrate(){
       delete store.log[k];
     }
   }
+  if (!store.bwLog || typeof store.bwLog !== "object") store.bwLog = {};
+  // editable program: seed from default and keep the shape valid
+  if (!store.program || typeof store.program !== "object") store.program = clone(DEFAULT_PROGRAM);
+  DAYS.forEach(d=>{
+    if (!store.program[d]) store.program[d] = clone(DEFAULT_PROGRAM[d]);
+    if (!store.program[d].title) store.program[d].title = DEFAULT_PROGRAM[d].title;
+    if (!store.program[d].short) store.program[d].short = DEFAULT_PROGRAM[d].short;
+    if (!Array.isArray(store.program[d].ex)) store.program[d].ex = [];
+    store.program[d].ex.forEach(x=>{
+      if (!x.id) x.id = newExId();
+      if (typeof x.n !== "string") x.n = "Exercise";
+      if (typeof x.sets !== "number" || x.sets < 1) x.sets = 3;
+      if (typeof x.rep !== "string") x.rep = String(x.rep || "8–12");
+      if (typeof x.a !== "string") x.a = "";
+      if (!Array.isArray(x.alt)) x.alt = [];
+    });
+  });
+  PROGRAM = store.program;
 }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function newExId(){ return "ux" + Math.random().toString(36).slice(2,8); }
 
 const PROTEIN = [
   {n:"Chicken breast", s:"6 oz, cooked", p:52},
@@ -697,6 +786,33 @@ function hitProgression(w,day,x){
     if((parseFloat(s.r)||0) < tr) return false;
   }
   return true;
+}
+
+// ── personal records: heaviest set ever for an exercise ────────────────────────
+function bestSet(day,exId,excludeKey){
+  const x=PROGRAM[day].ex.find(e=>e.id===exId); if(!x) return null;
+  let best=null;
+  for(let wk=1;wk<=WEEKS;wk++){
+    for(let i=0;i<x.sets;i++){
+      const key=sk(wk,day,exId,i); if(key===excludeKey) continue;
+      const s=store.log[key]; if(!s||!s.w) continue;
+      const v=parseFloat(s.w)||0, r=parseFloat(s.r)||0;
+      if(!best || v>best.v || (v===best.v && r>best.r)) best={v,r,raw:s.w,week:wk,key};
+    }
+  }
+  return best;
+}
+// key of the current all-time best set (for the PR badge)
+function prKey(day,exId){ const b=bestSet(day,exId,null); return b?b.key:null; }
+
+// ── bodyweight trend (per plan week) ──────────────────────────────────────────
+function monthlyBW(){
+  const months=[1,2,3,4,5,6].map(m=>({m,val:null}));
+  for(let wk=1;wk<=WEEKS;wk++){
+    const v=parseFloat(store.bwLog[wk]);
+    if(!isNaN(v)) months[monthOf(wk)-1].val=Math.round(v*10)/10;   // latest week in the month wins
+  }
+  return months;
 }
 
 let persistMode = "memory"; // cloud | local | memory
@@ -954,6 +1070,86 @@ function computePlates(){
     ${remaining>0.01?`<p class="pc-note">Closest loadable: <b>${loaded}${unit}</b> (${remaining}${unit}/side short — no smaller plate).</p>`:``}`;
 }
 
+/* ── personal-record celebration ───────────────────────────────────────────── */
+function maybePR(day,x,i){
+  const key=sk(store.week,day,x.id,i);
+  const s=store.log[key]; if(!s||!s.w) return;
+  const val=parseFloat(s.w)||0; if(val<=0) return;
+  const prev=bestSet(day,x.id,key);          // best excluding this exact set
+  if(!prev || val>prev.v) celebratePR(x, s.w, s.r);
+}
+function celebratePR(x, wgt, reps){
+  const t=document.getElementById("prToast"); if(!t) return;
+  t.innerHTML=`🏆 New PR — <b>${x.n}</b> · ${wgt}${store.unit}${reps?` × ${reps}`:""}`;
+  t.hidden=false; requestAnimationFrame(()=>t.classList.add("show"));
+  buzz();
+  clearTimeout(t._t); t._t=setTimeout(()=>{ t.classList.remove("show"); setTimeout(()=>{ t.hidden=true; }, 300); }, 3200);
+}
+
+/* ── program editor ────────────────────────────────────────────────────────── */
+function escAttr(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function renderEditor(list){
+  const day=active, exs=PROGRAM[day].ex;
+  const wrap=document.createElement("div"); wrap.className="editor";
+  const intro=document.createElement("p"); intro.className="ed-intro";
+  intro.innerHTML=`Editing <b>${LABEL[day]} · ${PROGRAM[day].title}</b> — rename, adjust sets/reps, reorder, add or remove. Your logged history is kept.`;
+  wrap.appendChild(intro);
+
+  exs.forEach((x,xi)=>{
+    const c=document.createElement("div"); c.className="edcard";
+    c.innerHTML=`
+      <div class="ed-top">
+        <span class="ed-num">${String(xi+1).padStart(2,"0")}</span>
+        <input class="ed-name" value="${escAttr(x.n)}" placeholder="Exercise name">
+        <div class="ed-move">
+          <button class="ed-mv" data-mv="up" ${xi===0?"disabled":""}>▲</button>
+          <button class="ed-mv" data-mv="down" ${xi===exs.length-1?"disabled":""}>▼</button>
+        </div>
+      </div>
+      <div class="ed-grid">
+        <div class="ed-f"><span>Sets</span>
+          <div class="ed-step"><button data-st="dec">−</button><b class="ed-sets">${x.sets}</b><button data-st="inc">+</button></div></div>
+        <label class="ed-f"><span>Reps</span><input class="ed-rep" value="${escAttr(x.rep)}" placeholder="8–12"></label>
+      </div>
+      <label class="ed-f wide"><span>Note (optional)</span><input class="ed-note" value="${escAttr(x.a)}" placeholder="e.g. slight forward lean"></label>
+      <label class="ed-f wide"><span>Alternatives (comma-separated)</span><input class="ed-alt" value="${escAttr(x.alt.join(', '))}" placeholder="Machine Press, Push-ups"></label>
+      <button class="ed-del" data-del>🗑 Remove exercise</button>`;
+    c.querySelector(".ed-name").addEventListener("input",e=>{ x.n=e.target.value; save(); });
+    c.querySelector(".ed-rep").addEventListener("input",e=>{ x.rep=e.target.value; save(); });
+    c.querySelector(".ed-note").addEventListener("input",e=>{ x.a=e.target.value; save(); });
+    c.querySelector(".ed-alt").addEventListener("input",e=>{ x.alt=e.target.value.split(",").map(v=>v.trim()).filter(Boolean); save(); });
+    c.querySelectorAll("[data-st]").forEach(b=>b.onclick=()=>{
+      if(b.dataset.st==="inc" && x.sets<8) x.sets++;
+      if(b.dataset.st==="dec" && x.sets>1) x.sets--;
+      c.querySelector(".ed-sets").textContent=x.sets; save();
+    });
+    c.querySelectorAll("[data-mv]").forEach(b=>b.onclick=()=>{
+      const j=b.dataset.mv==="up"?xi-1:xi+1; if(j<0||j>=exs.length) return;
+      [exs[xi],exs[j]]=[exs[j],exs[xi]]; save(); render();
+    });
+    c.querySelector("[data-del]").onclick=()=>{
+      if(!confirm(`Remove "${x.n}"? Its logged sets will be cleared.`)) return;
+      for(let wk=1;wk<=WEEKS;wk++) for(let i=0;i<x.sets;i++) delete store.log[sk(wk,day,x.id,i)];
+      exs.splice(xi,1); save(); render();
+    };
+    wrap.appendChild(c);
+  });
+
+  const addBtn=document.createElement("button"); addBtn.className="ed-add"; addBtn.textContent="+ Add exercise";
+  addBtn.onclick=()=>{ exs.push({id:newExId(), n:"New Exercise", a:"", sets:3, rep:"8–12", alt:[]}); save(); render(); };
+  wrap.appendChild(addBtn);
+
+  const foot=document.createElement("div"); foot.className="ed-actions";
+  foot.innerHTML=`<button class="btn" id="edReset">↺ Reset ${LABEL[day]}</button><button class="btn primary" id="edDone">✓ Done</button>`;
+  wrap.appendChild(foot);
+  list.appendChild(wrap);
+  foot.querySelector("#edDone").onclick=()=>{ editing=false; render(); window.scrollTo({top:0,behavior:'smooth'}); };
+  foot.querySelector("#edReset").onclick=()=>{
+    if(!confirm(`Reset ${LABEL[day]} to its original exercises? Logged data is kept but may not line up with the restored list.`)) return;
+    store.program[day]=clone(DEFAULT_PROGRAM[day]); PROGRAM=store.program; save(); render();
+  };
+}
+
 /* ── offline / PWA ─────────────────────────────────────────────────────────── */
 function initPWA(){
   if("serviceWorker" in navigator){
@@ -1007,7 +1203,7 @@ function render(){
   });
   const view = store.mode;
   const isTrain = view==="train";
-  const trainEls=["#weekWrap","#dayTabs",".session","#exList",".actions",".platecalc",".note"];
+  const trainEls=["#weekWrap","#dayTabs",".session","#editRow","#exList",".actions",".platecalc",".note"];
   trainEls.forEach(s=>{const el=document.querySelector(s); if(el) el.style.display = isTrain?"":"none";});
   if(!isTrain) hideRest();
   document.getElementById("fuelView").style.display = view==="fuel"?"block":"none";
@@ -1088,13 +1284,22 @@ function render(){
     }
   });
 
-  // exercises
+  // edit toggle
+  const editBtn=document.getElementById("editToggle");
+  editBtn.textContent = editing ? "✓ Done editing" : "✎ Edit exercises";
+  editBtn.classList.toggle("on", editing);
+  editBtn.onclick=()=>{ editing=!editing; render(); window.scrollTo({top:0,behavior:'smooth'}); };
+  document.querySelector(".actions").style.display = editing ? "none" : "";
+
+  // exercises (or the program editor)
   const list = document.getElementById("exList");
   list.innerHTML = "";
+  if(editing){ renderEditor(list); return; }
   PROGRAM[active].ex.forEach((x,xi)=>{
     let allDone=true, anyLog=false;
     for(let i=0;i<x.sets;i++){const s=getSet(w,active,x.id,i); if(!s.done)allDone=false; if(s.w||s.r)anyLog=true;}
     const progNow = hitProgression(w,active,x);
+    const pk = prKey(active,x.id);
     const openKey = active+"|"+x.id;
     const isOpen = store.open[openKey] ?? (xi===0);
 
@@ -1127,7 +1332,7 @@ function render(){
       const row=document.createElement("div");
       row.className="set-row"+((s.w||s.r)?" logged":"");
       row.innerHTML=`
-        <div class="sl">Set ${i+1}</div>
+        <div class="sl">${sk(w,active,x.id,i)===pk?'🏆 ':''}Set ${i+1}</div>
         <div class="field"><span class="tag">${store.unit}</span>
           <input inputmode="decimal" placeholder="${wPh}" value="${s.w}" data-k="w"></div>
         <div class="field"><span class="tag">reps</span>
@@ -1143,6 +1348,7 @@ function render(){
         save();
       };
       ["input","change","blur"].forEach(ev=>{ wIn.addEventListener(ev,commit); rIn.addEventListener(ev,commit); });
+      wIn.addEventListener("blur", ()=>maybePR(active,x,i));   // celebrate a new personal record
       chk.onclick=()=>{                       // toggle done in place
         const nowDone=!chk.classList.contains("on");
         store.log[sk(w,active,x.id,i)]={w:wIn.value.trim(), r:rIn.value.trim(), done:nowDone};
@@ -1152,17 +1358,20 @@ function render(){
         let all=true; for(let k=0;k<x.sets;k++){ if(!getSet(w,active,x.id,k).done) all=false; }
         card.classList.toggle("done-all",all);
         card.classList.toggle("progd", hitProgression(w,active,x));
-        if(nowDone) startRest();
+        if(nowDone){ startRest(); maybePR(active,x,i); }
         refreshProgress(); updateNudge(); save();
+        render();                              // refresh PR badges / foot
       };
       sets.appendChild(row);
     }
 
     // alternates — swap in if the machine/equipment is taken
-    const altDiv=document.createElement("div");
-    altDiv.className="altline";
-    altDiv.innerHTML=`<b>⇄ If taken:</b> ${x.alt.join(" · ")}`;
-    sets.appendChild(altDiv);
+    if(x.alt && x.alt.length){
+      const altDiv=document.createElement("div");
+      altDiv.className="altline";
+      altDiv.innerHTML=`<b>⇄ If taken:</b> ${x.alt.join(" · ")}`;
+      sets.appendChild(altDiv);
+    }
 
     const foot=document.createElement("div");
     foot.className="ex-foot";
@@ -1228,6 +1437,7 @@ function renderFuel(){
         <div class="field"><input id="bwInput" inputmode="decimal" placeholder="—" value="${store.bw}"></div>
         <span class="u">${store.unit}</span>
       </div>
+      <p class="hint" style="margin:2px 0 12px">Saved to <b>Week ${store.week}</b> — track the trend under <b>Progress → Bodyweight</b>.</p>
       ${bw ? `
       <div class="targets">
         <div class="tcard hero"><div class="v">${pLo}–${pHi}<small>g</small></div><div class="l">Protein</div></div>
@@ -1252,7 +1462,13 @@ function renderFuel(){
   `;
 
   const bwIn = document.getElementById("bwInput");
-  bwIn.addEventListener("input", ()=>{ store.bw=bwIn.value.trim(); save(); });
+  const recordBW = ()=>{
+    store.bw = bwIn.value.trim();
+    const val = parseFloat(store.bw);
+    if(!isNaN(val)) store.bwLog[store.week] = val; else delete store.bwLog[store.week];
+    save();
+  };
+  bwIn.addEventListener("input", recordBW);
   bwIn.addEventListener("change", ()=>{ render(); });
   bwIn.addEventListener("blur", ()=>{ render(); });
 }
@@ -1305,26 +1521,28 @@ function monthlyValues(day,ex,metric){
 function renderProgress(){
   const v=document.getElementById("progressView");
   const exs=allExercises();
-  const cur = exs.find(e=>store.chartEx===e.day+"|"+e.id) || exs[0];
-  store.chartEx = cur.day+"|"+cur.id;
+  const isBW = store.chartEx==="__bw__";
+  const cur = isBW ? {n:"Bodyweight"} : (exs.find(e=>store.chartEx===e.day+"|"+e.id) || exs[0]);
+  if(!isBW) store.chartEx = cur.day+"|"+cur.id;
   const metric = store.chartMetric || "weight";
 
-  const months = monthlyValues(cur.day,cur.id,metric);
+  const months = isBW ? monthlyBW() : monthlyValues(cur.day,cur.id,metric);
   const ranges = monthRanges();
   const vals = months.filter(m=>m.val!=null);
   const max = vals.length ? Math.max(...vals.map(m=>m.val)) : 0;
   const firstM = vals[0] || null;
   const lastM  = vals.length ? vals[vals.length-1] : null;
-  const change = (firstM&&lastM) ? lastM.val-firstM.val : null;
+  const change = (firstM&&lastM) ? Math.round((lastM.val-firstM.val)*10)/10 : null;
   const pct = (firstM&&lastM&&firstM.val>0) ? Math.round((lastM.val-firstM.val)/firstM.val*100) : null;
-  const show = x => metric==="volume" ? fmt(x) : x;
-  const metricLabel = metric==="weight" ? `Top Set · ${store.unit}`
+  const show = x => (!isBW && metric==="volume") ? fmt(x) : x;
+  const metricLabel = isBW ? `Bodyweight · ${store.unit}`
+                    : metric==="weight" ? `Top Set · ${store.unit}`
                     : metric==="e1rm"  ? `Est. 1-Rep Max · ${store.unit}`
                     : `Volume · ${store.unit}×reps`;
 
   const bars = months.map(m=>{
     const h = (m.val!=null && max>0) ? Math.max(7, Math.round(m.val/max*100)) : 0;
-    const best = m.val!=null && m.val===max && max>0;
+    const best = m.val!=null && m.val===max && max>0 && !isBW;
     return `<div class="pcol" title="Weeks ${ranges[m.m-1]}">
       <div class="pval">${m.val!=null?show(m.val):"·"}</div>
       <div class="ptrack"><div class="pfill${best?" best":""}" style="height:${h}%"></div></div>
@@ -1332,34 +1550,43 @@ function renderProgress(){
     </div>`;
   }).join("");
 
-  const opts = DAYS.map(d=>`<optgroup label="${LABEL[d]} — ${PROGRAM[d].title}">${
-    PROGRAM[d].ex.map(x=>`<option value="${d}|${x.id}"${(d+"|"+x.id)===store.chartEx?" selected":""}>${x.n}</option>`).join("")
+  const bwOpt = `<optgroup label="Body"><option value="__bw__"${isBW?" selected":""}>Bodyweight</option></optgroup>`;
+  const opts = bwOpt + DAYS.map(d=>`<optgroup label="${LABEL[d]} — ${PROGRAM[d].title}">${
+    PROGRAM[d].ex.map(x=>`<option value="${d}|${x.id}"${(!isBW && (d+"|"+x.id)===store.chartEx)?" selected":""}>${x.n}</option>`).join("")
   }</optgroup>`).join("");
   const segs = [["weight","Top Weight"],["e1rm","Est. 1RM"],["volume","Volume"]]
     .map(([k,l])=>`<button data-mm="${k}" class="${metric===k?"on":""}">${l}</button>`).join("");
 
-  const explain = metric==="weight" ? "Top Weight is your heaviest logged set that month."
+  const explain = isBW ? "Bodyweight is the latest value you logged each month (enter it under Fuel)."
+    : metric==="weight" ? "Top Weight is your heaviest logged set that month."
     : metric==="e1rm" ? "Est. 1RM uses the Epley formula from your best set — a fair way to compare across different rep ranges."
     : "Volume is weight × reps summed across every set you logged that month.";
 
+  // personal-records list (heaviest set per exercise)
+  const prRows = exs.map(e=>{ const b=bestSet(e.day,e.id,null); return b?{n:e.n,b}:null; })
+    .filter(Boolean).sort((a,b)=>b.b.v-a.b.v)
+    .map(r=>`<div class="food"><div class="nm">${r.n}<span>Week ${r.b.week}</span></div>
+      <div class="amt">${r.b.raw}${store.unit} <em>× ${r.b.r||"?"}</em></div></div>`).join("");
+
   v.innerHTML = `
-    <p class="fuel-intro">Your <b>monthly progress</b> for each lift across the 26-week plan. Pick a movement and watch the bars climb.</p>
+    <p class="fuel-intro">Your <b>monthly progress</b> across the 26-week plan. Pick a lift (or Bodyweight) and watch the trend.</p>
     <div class="calc">
       <div class="progpick">
         <select id="chartEx" class="exsel">${opts}</select>
-        <div class="segbar" id="metricSeg">${segs}</div>
+        <div class="segbar" id="metricSeg"${isBW?' style="display:none"':''}>${segs}</div>
       </div>
       ${vals.length ? `
       <div class="charthead"><span>${metricLabel}</span>${change!=null?`<span class="chg ${change>=0?"up":"down"}">${change>=0?"▲":"▼"} ${change>=0?"+":""}${show(change)}${pct!=null?` · ${pct>=0?"+":""}${pct}%`:""}</span>`:""}</div>
       <div class="chart">${bars}</div>
       <div class="targets" style="margin-top:16px">
-        <div class="tcard hero"><div class="v">${show(max)}<small> ${store.unit}</small></div><div class="l">Best Month</div></div>
+        <div class="tcard hero"><div class="v">${show(max)}<small> ${store.unit}</small></div><div class="l">${isBW?"Peak":"Best Month"}</div></div>
         <div class="tcard"><div class="v">${firstM?show(firstM.val):"—"}</div><div class="l">Start · M${firstM?firstM.m:"—"}</div></div>
         <div class="tcard"><div class="v">${lastM?show(lastM.val):"—"}</div><div class="l">Latest · M${lastM?lastM.m:"—"}</div></div>
       </div>
       <p class="hint">Months group the plan's weeks (M1 = wk ${ranges[0]} … M6 = wk ${ranges[5]}). ${explain}</p>
-      ` : `<p class="hint" style="margin-top:14px">No data yet for <b>${cur.n}</b>. Log some sets in <b>Train</b> and your monthly progress will chart here automatically.</p>`}
-    </div>`;
+      ` : `<p class="hint" style="margin-top:14px">No data yet for <b>${cur.n}</b>. ${isBW?"Log your bodyweight under <b>Fuel</b>":"Log some sets in <b>Train</b>"} and it'll chart here automatically.</p>`}
+    </div>
+    ${prRows ? `<div class="block"><h3>🏆 Personal Records</h3>${prRows}</div>` : ``}`;
 
   const sel=document.getElementById("chartEx");
   sel.onchange=()=>{ store.chartEx=sel.value; save(); renderProgress(); };

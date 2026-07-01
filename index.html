@@ -196,9 +196,10 @@
 
   /* ---- mode toggle (Train / Fuel) ---- */
   .mode{
-    display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:20px;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-bottom:20px;
     border:1px solid var(--knurl);border-radius:11px;overflow:hidden;
   }
+  .mode button + button{border-left:1px solid var(--knurl);}
   .mode button{
     background:var(--panel);border:0;color:var(--steel);cursor:pointer;
     font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.14em;
@@ -325,6 +326,39 @@
   .phase .pcue{font-size:12px;color:var(--steel);line-height:1.45;}
   .phase .pcue b{color:var(--bone);}
 
+  /* ---- progress / chart view ---- */
+  #progressView{display:none;}
+  .progpick{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+  .exsel{
+    width:100%;background:var(--panel);border:1px solid var(--knurl);border-radius:8px;
+    color:var(--bone);font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.02em;
+    padding:10px 34px 10px 12px;outline:none;-webkit-appearance:none;appearance:none;cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,var(--steel) 50%),linear-gradient(135deg,var(--steel) 50%,transparent 50%);
+    background-position:calc(100% - 18px) 19px,calc(100% - 13px) 19px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+  }
+  .exsel:focus{border-color:var(--molten);}
+  .segbar{display:flex;border:1px solid var(--knurl);border-radius:8px;overflow:hidden;}
+  .segbar button{
+    flex:1;background:var(--panel);border:0;border-left:1px solid var(--knurl);color:var(--steel);
+    font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.07em;text-transform:uppercase;padding:9px 4px;cursor:pointer;transition:.12s;
+  }
+  .segbar button:first-child{border-left:0;}
+  .segbar button.on{background:var(--molten);color:#140a04;font-weight:600;}
+  .charthead{
+    display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;
+    font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);
+  }
+  .charthead .chg{font-size:12.5px;letter-spacing:.02em;white-space:nowrap;}
+  .charthead .chg.up{color:var(--molten);}
+  .charthead .chg.down{color:#d8a23b;}
+  .chart{display:flex;align-items:flex-end;gap:6px;height:150px;}
+  .pcol{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;min-width:0;}
+  .pval{font-family:'Oswald',sans-serif;font-size:11px;color:var(--steel);margin-bottom:4px;min-height:14px;line-height:1;}
+  .ptrack{flex:1;width:100%;display:flex;align-items:flex-end;background:linear-gradient(180deg,#ffffff05,transparent);border-radius:4px;}
+  .pfill{width:100%;background:linear-gradient(180deg,#7a3318,#4d2010);border-radius:4px 4px 0 0;min-height:2px;transition:height .35s;}
+  .pfill.best{background:linear-gradient(180deg,#FF7A45,#FF5A1F 55%,#d8430f);box-shadow:0 0 8px rgba(255,90,31,.4);}
+  .plbl{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.06em;color:var(--dim);margin-top:6px;text-transform:uppercase;}
+
   /* alternates line inside an open exercise */
   .altline{
     font-size:10.5px;color:var(--dim);line-height:1.4;padding:9px 0 2px;
@@ -351,6 +385,7 @@
 
   <div class="mode" id="modeToggle">
     <button data-m="train" class="on">Train</button>
+    <button data-m="chart">Progress</button>
     <button data-m="fuel">Fuel</button>
   </div>
 
@@ -373,6 +408,8 @@
   </div>
 
   <section id="fuelView"></section>
+
+  <section id="progressView"></section>
 
   <section id="weekWrap">
     <div class="weekbar">
@@ -461,7 +498,7 @@ function weekPlan(w){
 }
 
 const KEY = "logbook:v1";
-let store = { unit:"lb", log:{}, open:{}, bw:"", mode:"train", week:1 };  // log["1|mon|bench|0"]={w,r,done}
+let store = { unit:"lb", log:{}, open:{}, bw:"", mode:"train", week:1, chartEx:"", chartMetric:"weight" };  // log["1|mon|bench|0"]={w,r,done}
 let active = "mon";
 let saveT = null;
 
@@ -693,10 +730,12 @@ function render(){
     btn.classList.toggle("on", btn.dataset.m===store.mode);
     btn.onclick=()=>{ store.mode=btn.dataset.m; save(); render(); window.scrollTo({top:0,behavior:'smooth'}); };
   });
+  const view = store.mode;
+  const isTrain = view==="train";
   const trainEls=["#weekWrap","#dayTabs",".session","#exList",".actions",".note"];
-  const fuel = store.mode==="fuel";
-  trainEls.forEach(s=>{const el=document.querySelector(s); if(el) el.style.display = fuel?"none":"";});
-  document.getElementById("fuelView").style.display = fuel?"block":"none";
+  trainEls.forEach(s=>{const el=document.querySelector(s); if(el) el.style.display = isTrain?"":"none";});
+  document.getElementById("fuelView").style.display = view==="fuel"?"block":"none";
+  document.getElementById("progressView").style.display = view==="chart"?"block":"none";
 
   // unit toggle (shared)
   document.querySelectorAll("#unit button").forEach(btn=>{
@@ -704,7 +743,8 @@ function render(){
     btn.onclick = ()=>{ store.unit=btn.dataset.u; save(); render(); };
   });
 
-  if(fuel){ renderFuel(); return; }
+  if(view==="fuel"){ renderFuel(); return; }
+  if(view==="chart"){ renderProgress(); return; }
 
   const w = store.week;
   const plan = weekPlan(w);
@@ -923,6 +963,117 @@ function renderFuel(){
   bwIn.addEventListener("input", ()=>{ store.bw=bwIn.value.trim(); save(); });
   bwIn.addEventListener("change", ()=>{ render(); });
   bwIn.addEventListener("blur", ()=>{ render(); });
+}
+
+/* ── Monthly progress chart ──────────────────────────────────────────────── */
+const fmt = n => Number(n).toLocaleString();
+function allExercises(){
+  const out=[];
+  DAYS.forEach(d=>PROGRAM[d].ex.forEach(x=>out.push({day:d,id:x.id,n:x.n})));
+  return out;
+}
+// map a plan week (1–26) onto one of 6 "months"
+function monthOf(week){ return Math.min(6, Math.ceil(week/(WEEKS/6))); }
+function monthRanges(){
+  const r=[];
+  for(let m=1;m<=6;m++){ let a=null,b=null;
+    for(let wk=1;wk<=WEEKS;wk++){ if(monthOf(wk)===m){ if(a==null)a=wk; b=wk; } }
+    r.push(a+"–"+b);
+  }
+  return r;
+}
+// best/volume value for one exercise in one week, or null if nothing logged
+function exWeekValue(day,ex,week,metric){
+  const x=PROGRAM[day].ex.find(e=>e.id===ex); if(!x) return null;
+  let best=0, vol=0, any=false;
+  for(let i=0;i<x.sets;i++){
+    const s=getSet(week,day,ex,i);
+    if(!s.w) continue;
+    const w=parseFloat(s.w)||0, r=parseFloat(s.r)||0;
+    any=true;
+    if(metric==="weight"){ if(w>best) best=w; }
+    else if(metric==="e1rm"){ const e=w*(1+r/30); if(e>best) best=e; }   // Epley
+    else if(metric==="volume"){ if(r>0) vol+=w*r; }
+  }
+  if(!any) return null;
+  return metric==="volume" ? Math.round(vol) : Math.round(best);
+}
+function monthlyValues(day,ex,metric){
+  const months=[1,2,3,4,5,6].map(m=>({m,val:null}));
+  for(let wk=1;wk<=WEEKS;wk++){
+    const val=exWeekValue(day,ex,wk,metric);
+    if(val==null) continue;
+    const M=months[monthOf(wk)-1];
+    if(metric==="volume") M.val=(M.val||0)+val;
+    else M.val = (M.val==null) ? val : Math.max(M.val,val);
+  }
+  return months;
+}
+
+function renderProgress(){
+  const v=document.getElementById("progressView");
+  const exs=allExercises();
+  const cur = exs.find(e=>store.chartEx===e.day+"|"+e.id) || exs[0];
+  store.chartEx = cur.day+"|"+cur.id;
+  const metric = store.chartMetric || "weight";
+
+  const months = monthlyValues(cur.day,cur.id,metric);
+  const ranges = monthRanges();
+  const vals = months.filter(m=>m.val!=null);
+  const max = vals.length ? Math.max(...vals.map(m=>m.val)) : 0;
+  const firstM = vals[0] || null;
+  const lastM  = vals.length ? vals[vals.length-1] : null;
+  const change = (firstM&&lastM) ? lastM.val-firstM.val : null;
+  const pct = (firstM&&lastM&&firstM.val>0) ? Math.round((lastM.val-firstM.val)/firstM.val*100) : null;
+  const show = x => metric==="volume" ? fmt(x) : x;
+  const metricLabel = metric==="weight" ? `Top Set · ${store.unit}`
+                    : metric==="e1rm"  ? `Est. 1-Rep Max · ${store.unit}`
+                    : `Volume · ${store.unit}×reps`;
+
+  const bars = months.map(m=>{
+    const h = (m.val!=null && max>0) ? Math.max(7, Math.round(m.val/max*100)) : 0;
+    const best = m.val!=null && m.val===max && max>0;
+    return `<div class="pcol" title="Weeks ${ranges[m.m-1]}">
+      <div class="pval">${m.val!=null?show(m.val):"·"}</div>
+      <div class="ptrack"><div class="pfill${best?" best":""}" style="height:${h}%"></div></div>
+      <div class="plbl">M${m.m}</div>
+    </div>`;
+  }).join("");
+
+  const opts = DAYS.map(d=>`<optgroup label="${LABEL[d]} — ${PROGRAM[d].title}">${
+    PROGRAM[d].ex.map(x=>`<option value="${d}|${x.id}"${(d+"|"+x.id)===store.chartEx?" selected":""}>${x.n}</option>`).join("")
+  }</optgroup>`).join("");
+  const segs = [["weight","Top Weight"],["e1rm","Est. 1RM"],["volume","Volume"]]
+    .map(([k,l])=>`<button data-mm="${k}" class="${metric===k?"on":""}">${l}</button>`).join("");
+
+  const explain = metric==="weight" ? "Top Weight is your heaviest logged set that month."
+    : metric==="e1rm" ? "Est. 1RM uses the Epley formula from your best set — a fair way to compare across different rep ranges."
+    : "Volume is weight × reps summed across every set you logged that month.";
+
+  v.innerHTML = `
+    <p class="fuel-intro">Your <b>monthly progress</b> for each lift across the 26-week plan. Pick a movement and watch the bars climb.</p>
+    <div class="calc">
+      <div class="progpick">
+        <select id="chartEx" class="exsel">${opts}</select>
+        <div class="segbar" id="metricSeg">${segs}</div>
+      </div>
+      ${vals.length ? `
+      <div class="charthead"><span>${metricLabel}</span>${change!=null?`<span class="chg ${change>=0?"up":"down"}">${change>=0?"▲":"▼"} ${change>=0?"+":""}${show(change)}${pct!=null?` · ${pct>=0?"+":""}${pct}%`:""}</span>`:""}</div>
+      <div class="chart">${bars}</div>
+      <div class="targets" style="margin-top:16px">
+        <div class="tcard hero"><div class="v">${show(max)}<small> ${store.unit}</small></div><div class="l">Best Month</div></div>
+        <div class="tcard"><div class="v">${firstM?show(firstM.val):"—"}</div><div class="l">Start · M${firstM?firstM.m:"—"}</div></div>
+        <div class="tcard"><div class="v">${lastM?show(lastM.val):"—"}</div><div class="l">Latest · M${lastM?lastM.m:"—"}</div></div>
+      </div>
+      <p class="hint">Months group the plan's weeks (M1 = wk ${ranges[0]} … M6 = wk ${ranges[5]}). ${explain}</p>
+      ` : `<p class="hint" style="margin-top:14px">No data yet for <b>${cur.n}</b>. Log some sets in <b>Train</b> and your monthly progress will chart here automatically.</p>`}
+    </div>`;
+
+  const sel=document.getElementById("chartEx");
+  sel.onchange=()=>{ store.chartEx=sel.value; save(); renderProgress(); };
+  document.querySelectorAll("#metricSeg button").forEach(b=>{
+    b.onclick=()=>{ store.chartMetric=b.dataset.mm; save(); renderProgress(); };
+  });
 }
 
 load();
